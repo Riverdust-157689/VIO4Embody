@@ -36,10 +36,10 @@ cd /root/catkin_ws && catkin build camera_models ylx2uq2_ros && source devel/set
 # 确认 2UQ2 的节点
 v4l2-ctl --list-devices
 
-# 安装稳定设备名 udev 规则(一次即可)
+# 安装稳定设备名 udev 规则(一次即可, 详见 docs/设备节点映射.md)
 sudo cp ~/vision_imu/VINS-Fusion/tools/2uq2_probe/99-2uq2.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && sudo udevadm trigger
-ls -l /dev/video2uq2
+ls -l /dev/video2uq2    # 应指向采集节点(不是 metadata 节点)
 ```
 
 ## 四、标定采图(驱动运行时, 容器内)
