@@ -1,0 +1,21 @@
+<launch>
+  <!-- YLX-2UQ2 驱动: A/B 对比 B 组 - 关闭 Kalibr 标度修正(用原始 LSB 换算) -->
+  <node name="ylx2uq2_driver" pkg="ylx2uq2_ros" type="ylx2uq2_ros_node" output="screen">
+    <param name="device"          value="/dev/video2uq2"/>
+    <param name="width"           value="2560"/>
+    <param name="height"          value="720"/>
+    <param name="fps"             value="120"/>
+    <param name="image_subsample" value="4"/>
+    <param name="swap_cams"       value="false"/>
+    <param name="exposure_auto"   value="1"/>
+    <param name="exposure_abs"    value="50"/>
+    <param name="gain"            value="80"/>
+    <param name="xu_unit"         value="3"/>
+    <param name="xu_selector"     value="1"/>
+    <param name="cam0_topic"      value="/cam0/image_raw"/>
+    <param name="cam1_topic"      value="/cam1/image_raw"/>
+    <param name="imu_topic"       value="/imu0"/>
+    <param name="frame_id"        value="camera"/>
+    <param name="imu_calib_enable" value="false"/>
+  </node>
+</launch>

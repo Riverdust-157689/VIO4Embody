@@ -1,0 +1,80 @@
+%YAML:1.0
+
+# ============================================================
+# YLX-2UQ2 双目相机(实测~86°低畸变广角, pinhole 模型) + 内置 IMU 的 VINS 配置
+# 标定状态:
+#   1. cam0_pinhole.yaml 已完成 (RMS 0.289px), cam1 待标定
+#   2. body_T_cam0/1 用 estimate_extrinsic: 1 在线估计
+#   3. acc_n/gyr_n/acc_w/gyr_w 为占位值, 后续按 Allan 方差更新
+# ============================================================
+
+#common parameters
+imu: 1
+num_of_cam: 2
+
+imu_topic: "/imu0"
+image0_topic: "/cam0/image_raw"
+image1_topic: "/cam1/image_raw"
+output_path: "~/output/"
+
+cam0_calib: "cam0_pinhole.yaml"
+cam1_calib: "cam1_pinhole.yaml"
+image_width: 1280                # 每眼宽度(2560/2)
+image_height: 720                # 每眼高度
+
+# Extrinsic parameter between IMU and Camera.
+# Kalibr 标定结果 (imu->cam 逆变换, 时间偏移 -10.8ms, 收敛优); 信任外参
+estimate_extrinsic: 0
+
+body_T_cam0: !!opencv-matrix    # = inv(T_cam0_imu0), Kalibr 结果
+   rows: 4
+   cols: 4
+   dt: d
+   data: [-0.9999990254, 0.0003640478595, 0.001349835578, -0.0001743076164,
+          0.0003607821595, 0.9999970274, -0.002412979358, 0.0005604136236,
+          -0.001350704404, -0.00241249064, -0.9999961755, -0.0002741986,
+          0, 0, 0, 1]
+
+body_T_cam1: !!opencv-matrix    # = inv(T_cam1_imu0), Kalibr 结果
+   rows: 4
+   cols: 4
+   dt: d
+   data: [-0.9998547464, 0.01529985678, -0.007510460546, -0.05926184904,
+          0.01537791327, 0.9998271561, -0.01044862246, 0.0004583050405,
+          0.007349299555, -0.01056259746, -0.9999172024, -0.001205344699,
+          0, 0, 0, 1]
+
+#Multiple thread support
+multiple_thread: 1
+
+#feature traker paprameters
+max_cnt: 150
+min_dist: 30
+freq: 10
+F_threshold: 1.0
+show_track: 1
+flow_back: 1
+
+#optimization parameters
+max_solver_time: 0.04
+max_num_iterations: 8
+keyframe_parallax: 10.0
+
+#imu parameters
+# 注意: 不用 Allan 纯白噪声值(0.015/0.003)——本 IMU 有未校正的系统性标度误差(2~6%),
+#       Allan 值会让 VINS 过度信任 IMU 导致发散。用 EuRoC 量级(等效总误差)经实测最稳。
+acc_n: 0.1
+gyr_n: 0.01
+acc_w: 0.001
+gyr_w: 0.0001
+g_norm: 9.81007
+
+#unsynchronization parameters
+# Kalibr 实测时延: t_imu = t_cam - 0.0108s → td = -0.0108
+estimate_td: 0
+td: -0.0108
+
+#loop closure parameters
+load_previous_pose_graph: 0
+pose_graph_save_path: "~/output/pose_graph/"
+save_image: 1

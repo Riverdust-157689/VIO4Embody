@@ -1,0 +1,137 @@
+# 2UQ2 + VINS-Fusion 常用命令速查
+
+> 容器镜像: ros:vins-fusion (构建: `cd docker && make build`)
+> 摄像头稳定设备名: /dev/video2uq2 (udev 规则, 见"三、设备")
+
+## 一、容器启动
+
+```bash
+# 硬件模式: 2UQ2驱动 + VINS + rosbridge(Foxglove) 一条龙
+./run_foxglove.sh -d /root/catkin_ws/src/VINS-Fusion/config/2uq2/2uq2_stereo_imu_config.yaml
+
+# 数据集模式(EuRoC bag 回放 + VINS + rosbridge)
+./run_foxglove.sh /root/catkin_ws/src/VINS-Fusion/config/euroc/euroc_stereo_imu_config.yaml ~/datasets
+
+# 进容器交互 shell(不跑节点), 用于编译/标定/调试
+./run_shell.sh
+
+# 停容器(重名冲突时)
+docker stop vins-fusion
+
+# 打开正在跑的容器
+docker exec -it vins-fusion bash
+```
+
+## 二、编译
+
+```bash
+# 容器内(或 run_shell.sh 进去后)
+cd /root/catkin_ws && catkin build camera_models ylx2uq2_ros && source devel/setup.bash
+```
+> 容器每次新建 /root/catkin_ws 都会重置, 重新编译即可(增量秒级)
+
+## 三、设备
+
+```bash
+# 确认 2UQ2 的节点
+v4l2-ctl --list-devices
+
+# 安装稳定设备名 udev 规则(一次即可)
+sudo cp ~/vision_imu/VINS-Fusion/tools/2uq2_probe/99-2uq2.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules && sudo udevadm trigger
+ls -l /dev/video2uq2
+```
+
+## 四、标定采图(驱动运行时, 容器内)
+
+```bash
+# 自动模式(双眼同帧检测到才成对保存, 推荐)
+rosrun ylx2uq2_ros checker_capture
+
+# 按键模式(c/空格采集, q退出)
+rosrun ylx2uq2_ros checker_capture _keyboard_mode:=true
+```
+图像保存到 `config/2uq2/calib_data/cam0|cam1/`(挂载区, 宿主机同路径可见)
+
+## 五、单目内参标定(容器内, 先在 config/2uq2 目录)
+
+```bash
+cd /root/catkin_ws/src/VINS-Fusion/config/2uq2
+rosrun camera_models Calibrations --camera-model pinhole -w 11 -h 8 -s 28.66 \
+  -i /root/catkin_ws/src/VINS-Fusion/config/2uq2/calib_data/cam0 \
+  --prefix calib_ --file-extension .jpg --camera-name cam0_pinhole
+mv cam0_pinhole_camera_calib.yaml cam0_pinhole.yaml   # cam1 同理
+```
+> `-s` 用实测方格尺寸; 棋盘格 PDF 在 tools/ 下(A4 15mm / A3 30mm)
+
+## 六、双目外参(cam0<->cam1 基线)
+
+```bash
+# 容器内
+cd /root/catkin_ws/src/VINS-Fusion/tools/stereo_extrinsics
+cmake . && make
+./stereo_extrinsics \
+  /root/catkin_ws/src/VINS-Fusion/config/2uq2/calib_data/cam0 \
+  /root/catkin_ws/src/VINS-Fusion/config/2uq2/calib_data/cam1 \
+  /root/catkin_ws/src/VINS-Fusion/config/2uq2/cam0_pinhole.yaml \
+  /root/catkin_ws/src/VINS-Fusion/config/2uq2/cam1_pinhole.yaml \
+  28.66
+```
+输出直接可粘贴的 body_T_cam1 yaml 块, 填入配置
+
+## 七、IMU 探针(宿主机, 需先起视频流)
+
+```bash
+# 起视频流(终端A, 保持运行)
+v4l2-ctl -d /dev/video2uq2 --stream-mmap --stream-loop
+
+# 终端B:
+cd ~/vision_imu/VINS-Fusion/tools/2uq2_probe
+sudo ./probe /dev/video2uq2 3          # IMU 更新率(序号变化)
+sudo ./probe_content /dev/video2uq2 5  # 序号 vs 内容变化率(查是否藏高频数据)
+sudo ./probe_selectors /dev/video2uq2  # 枚举 XU 选择器
+sudo ./probe_switch /dev/video2uq2 2   # 读写单字节开关(外触发?)
+```
+
+## 八、常见问题
+
+| 现象 | 处理 |
+|---|---|
+| QXcbConnection 崩溃(标定时) | 容器内先 `catkin build camera_models`(headless 补丁) |
+| 标定 RMS 大 | 重采图, 棋盘覆盖画面四角, 双眼都要完整可见 |
+| VINS td 异常(如 0.29s) | 配置里 `estimate_td: 0`(IMU 与图像同源打戳, td≈0) |
+| 轨迹发散/尺度飞 | 初始化时晃动相机(六自由度); IMU-相机外参需 estimate_extrinsic 收敛, 严重时用 Kalibr |
+| IMU 频率只有 ~86Hz | 固件帧锁; 向厂商要高频固件(需求见第十节) |
+
+## 九、数据集回放(EuRoC)
+
+```bash
+./run_foxglove.sh /root/catkin_ws/src/VINS-Fusion/config/euroc/euroc_stereo_imu_config.yaml ~/datasets
+
+# 另开终端:
+docker exec -it vins-fusion bash
+source /opt/ros/kinetic/setup.bash && source /root/catkin_ws/devel/setup.bash
+rosbag play /root/data/MH_01_easy.bag
+
+# Foxglove 桌面版(绕过代理):
+/opt/Foxglove/foxglove-studio --no-proxy-server &
+```
+
+## 九B、播放任意 bag 并在 Foxglove 查看
+
+```bash
+# 方式1(最简单): Foxglove 直接打开 bag 文件
+#   Open data source -> Local file -> 选 bag 文件
+
+# 方式2(带 VINS 轨迹): bag 在仓库里时, 把仓库挂为数据目录
+./run_foxglove.sh /root/catkin_ws/src/VINS-Fusion/config/2uq2/2uq2_stereo_imu_config.yaml ~/vision_imu/VINS-Fusion
+docker exec -it vins-fusion bash
+source /opt/ros/kinetic/setup.bash && source /root/catkin_ws/devel/setup.bash
+rosbag play /root/data/<你的bag>.bag
+```
+
+## 十、给厂商的 IMU 高频固件需求(备忘)
+
+> 当前固件 IMU 经 UVC XU(选择器1)输出, 每视频帧仅更新一次(实测 60fps 模式~55Hz, 120fps 模式~86Hz)。
+> 传感器为 800Hz(加速度计)/400Hz(陀螺仪)。请提供: ① XU 按 400/800Hz 更新并带真实时间戳;
+> ② 每帧批量输出多个样本; ③ 独立 USB 通道按传感器频率输出。

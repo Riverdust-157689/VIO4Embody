@@ -1,0 +1,29 @@
+% ============================================================
+% 棋盘格 A3 版(横向): 12x9 格 (内角 11x8), 方格 30mm (360x270mm)
+% 打印: 100% 实际大小(不要"适应页面"), 标定参数: -s 30
+% 推荐: A3 大棋盘在 120 度鱼眼下特征更多, 标定更稳
+% ============================================================
+\documentclass{article}
+\usepackage[a3paper, landscape, margin=5mm]{geometry}
+\usepackage{tikz}
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\begin{document}
+\begin{center}
+\begin{tikzpicture}
+  \def\s{30mm} % 方格边长
+  \foreach \row in {0,...,8}{
+    \foreach \col in {0,...,11}{
+      \pgfmathparse{int(mod(\row+\col,2))}
+      \ifnum\pgfmathresult=0
+        \fill[black] (\col*\s,-\row*\s) rectangle ++(\s,\s);
+      \fi
+    }
+  }
+\end{tikzpicture}
+
+\vspace{2mm}
+{\large Checkerboard: 12$\times$9 (11$\times$8 inner corners), square 30mm}\\[1mm]
+{\small Print at 100\% actual size. Calibration: \texttt{-w 11 -h 8 -s 30}}
+\end{center}
+\end{document}

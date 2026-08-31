@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>ylx2uq2_ros</name>
+  <version>0.1.0</version>
+  <description>YLX-2UQ2 双目全局快门相机 + 内置 IMU 的 ROS1 驱动 (V4L2 + UVC XU)</description>
+  <maintainer email="firedust@example.com">firedust</maintainer>
+  <license>GPLv3</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+</package>

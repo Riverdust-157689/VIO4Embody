@@ -6,7 +6,10 @@ ENV CATKIN_WS=/root/catkin_ws
       # set up thread number for building
 RUN   if [ "x$(nproc)" = "x1" ] ; then export USE_PROC=1 ; \
       else export USE_PROC=$(($(nproc)/2)) ; fi && \
-      apt-get update && apt-get install -y \
+      # Ubuntu 16.04 (xenial) 已 EOL：官方 old-releases 存档站已下架 xenial（404），
+      # archive.ubuntu.com 仍可用但国内慢；统一切到阿里云镜像（用 http，xenial 的 apt 默认不支持 https）
+      sed -i 's|http://archive.ubuntu.com/ubuntu|http://mirrors.aliyun.com/ubuntu|g; s|http://security.ubuntu.com/ubuntu|http://mirrors.aliyun.com/ubuntu|g; s|http://old-releases.ubuntu.com/ubuntu|http://mirrors.aliyun.com/ubuntu|g' /etc/apt/sources.list 2>/dev/null || true && \
+      apt-get -o Acquire::Retries=3 update && apt-get -o Acquire::Retries=3 install -y \
       cmake \
       libatlas-base-dev \
       libeigen3-dev \
@@ -16,10 +19,12 @@ RUN   if [ "x$(nproc)" = "x1" ] ; then export USE_PROC=1 ; \
       ros-${ROS_DISTRO}-cv-bridge \
       ros-${ROS_DISTRO}-image-transport \
       ros-${ROS_DISTRO}-message-filters \
-      ros-${ROS_DISTRO}-tf && \
+      ros-${ROS_DISTRO}-tf \
+      ros-${ROS_DISTRO}-rosbridge-suite && \
       rm -rf /var/lib/apt/lists/* && \
       # Build and install Ceres
-      git clone https://ceres-solver.googlesource.com/ceres-solver && \
+      # 原版 clone 自 ceres-solver.googlesource.com（国内无法访问），改为 GitHub 官方镜像仓库
+      git clone https://github.com/ceres-solver/ceres-solver.git && \
       cd ceres-solver && \
       git checkout tags/${CERES_VERSION} && \
       mkdir build && cd build && \

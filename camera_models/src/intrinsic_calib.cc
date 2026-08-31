@@ -2,6 +2,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
+#include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <opencv2/core/core.hpp>
@@ -206,8 +207,11 @@ main( int argc, char** argv )
             cv::Mat sketch;
             chessboard.getSketch( ).copyTo( sketch );
 
-            cv::imshow( "Image", sketch );
-            cv::waitKey( 50 );
+            if ( std::getenv( "DISPLAY" ) )   // 无显示环境(容器)时跳过弹窗
+            {
+                cv::imshow( "Image", sketch );
+                cv::waitKey( 50 );
+            }
         }
         else if ( verbose )
         {
@@ -215,7 +219,8 @@ main( int argc, char** argv )
         }
         chessboardFound.at( i ) = chessboard.cornersFound( );
     }
-    cv::destroyWindow( "Image" );
+    if ( std::getenv( "DISPLAY" ) )
+        cv::destroyWindow( "Image" );
 
     if ( calibration.sampleCount( ) < 10 )
     {
@@ -265,18 +270,21 @@ main( int argc, char** argv )
         // visualize observed and reprojected points
         calibration.drawResults( cbImages );
 
-        for ( size_t i = 0; i < cbImages.size( ); ++i )
+        if ( std::getenv( "DISPLAY" ) )   // 无显示环境(容器)时跳过弹窗
         {
-            cv::putText( cbImages.at( i ),
-                         cbImageFilenames.at( i ),
-                         cv::Point( 10, 20 ),
-                         cv::FONT_HERSHEY_COMPLEX,
-                         0.5,
-                         cv::Scalar( 255, 255, 255 ),
-                         1,
-                         CV_AA );
-            cv::imshow( "Image", cbImages.at( i ) );
-            cv::waitKey( 0 );
+            for ( size_t i = 0; i < cbImages.size( ); ++i )
+            {
+                cv::putText( cbImages.at( i ),
+                             cbImageFilenames.at( i ),
+                             cv::Point( 10, 20 ),
+                             cv::FONT_HERSHEY_COMPLEX,
+                             0.5,
+                             cv::Scalar( 255, 255, 255 ),
+                             1,
+                             CV_AA );
+                cv::imshow( "Image", cbImages.at( i ) );
+                cv::waitKey( 0 );
+            }
         }
     }
 

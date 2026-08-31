@@ -1,0 +1,23 @@
+<launch>
+  <!-- YLX-2UQ2 驱动: 210fps 模式 (1280x480 双画面 = 每眼640x480), IMU ~190Hz
+       配合 config/2uq2/2uq2_stereo_imu_config_210.yaml 使用
+  -->
+  <node name="ylx2uq2_driver" pkg="ylx2uq2_ros" type="ylx2uq2_ros_node" output="screen">
+    <param name="device"          value="/dev/video2uq2"/>
+    <param name="width"           value="1280"/>
+    <param name="height"          value="480"/>
+    <param name="fps"             value="210"/>
+    <param name="image_subsample" value="7"/>
+    <param name="swap_cams"       value="false"/>
+    <param name="exposure_auto"   value="1"/>
+    <param name="exposure_abs"    value="30"/>
+    <param name="gain"            value="80"/>
+    <param name="xu_unit"         value="3"/>
+    <param name="xu_selector"     value="1"/>
+    <param name="cam0_topic"      value="/cam0/image_raw"/>
+    <param name="cam1_topic"      value="/cam1/image_raw"/>
+    <param name="imu_topic"       value="/imu0"/>
+    <param name="frame_id"        value="camera"/>
+    <param name="imu_calib_enable" value="false"/>
+  </node>
+</launch>

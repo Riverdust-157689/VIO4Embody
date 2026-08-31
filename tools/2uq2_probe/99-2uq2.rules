@@ -1,0 +1,5 @@
+# YLX-2UQ2 双目相机: 按 USB ID 固定设备名, 只匹配采集节点(index=0, 避开 metadata 节点)
+# 安装: sudo cp 99-2uq2.rules /etc/udev/rules.d/
+#       sudo udevadm control --reload-rules && sudo udevadm trigger
+# 验证: ls -l /dev/video2uq2  (应指向采集节点)
+SUBSYSTEM=="video4linux", KERNEL=="video*", ATTRS{idVendor}=="1bcf", ATTRS{idProduct}=="0b15", ATTR{index}=="0", SYMLINK+="video2uq2", MODE="0666"

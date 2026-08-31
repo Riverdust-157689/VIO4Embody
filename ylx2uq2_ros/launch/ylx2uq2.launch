@@ -1,0 +1,23 @@
+<launch>
+  <!-- YLX-2UQ2 双目相机 + IMU 驱动
+       默认: 2560x720@120fps (每眼1280x720), 图像抽帧到 30fps, IMU 全量(~100Hz)
+       切换 210fps 模式: width=1280 height=480 fps=210 image_subsample=7
+  -->
+  <node name="ylx2uq2_driver" pkg="ylx2uq2_ros" type="ylx2uq2_ros_node" output="screen">
+    <param name="device"          value="/dev/video2uq2"/>
+    <param name="width"           value="2560"/>
+    <param name="height"          value="720"/>
+    <param name="fps"             value="120"/>
+    <param name="image_subsample" value="4"/>
+    <param name="swap_cams"       value="false"/>
+    <param name="exposure_auto"   value="1"/>
+    <param name="exposure_abs"    value="50"/>
+    <param name="gain"            value="80"/>
+    <param name="xu_unit"         value="3"/>
+    <param name="xu_selector"     value="1"/>
+    <param name="cam0_topic"      value="/cam0/image_raw"/>
+    <param name="cam1_topic"      value="/cam1/image_raw"/>
+    <param name="imu_topic"       value="/imu0"/>
+    <param name="frame_id"        value="camera"/>
+  </node>
+</launch>

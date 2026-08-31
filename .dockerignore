@@ -1,0 +1,7 @@
+.git
+.gitignore
+*.bag
+docker/build
+.vscode
+__pycache__
+kalibr/
